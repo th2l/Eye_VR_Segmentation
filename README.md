@@ -1,2 +1,2 @@
-# TL-Eye-Segmentation
+# TL Eye Segmentation
 AR/VR Eye Semantic Segmentation
