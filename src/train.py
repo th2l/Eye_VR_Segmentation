@@ -3,7 +3,7 @@ Based on the source code from these links
 https://github.com/timgaripov/swa
 https://github.com/izmailovpavel/contrib_swa_examples
 """
-from comet_ml import Experiment
+#from comet_ml import Experiment
 import argparse
 import datetime
 import os
@@ -153,14 +153,6 @@ class MobileNetV2_CS(nn.Module):
                 [1, 16, 2, 1],
                 [6, 24, 3, 2],
                 [6, 32, 4, 2],
-                # [6, 64, 4, 2]
-                # [1, 16, 1, 1],
-                # [6, 24, 2, 2],
-                # [6, 32, 3, 2],
-                # [6, 64, 4, 2],
-                # [6, 96, 3, 1],
-                # [6, 160, 3, 2],
-                # [6, 320, 1, 1],
             ]
 
         # only check the first element, assuming user knows t,c,n,s are required
@@ -184,17 +176,11 @@ class MobileNetV2_CS(nn.Module):
         # building last several layers
         kn_size = 3
         features.append(ConvReLU(input_channel, 64, kernel_size=kn_size))
-        # features.append(ConvReLU(64, 64, kernel_size=kn_size))
 
         self.features = nn.Sequential(*features)
-        # building segmentation layer (1x1)
-        # self.aspp = ASPP(in_channels=64, atrous_rates=[16, 24, 32])
-        # self.aspp = ASPP(in_channels=64, atrous_rates=[6, 12, 18])
+        
+        # building segmentation layer
         c_segmentation = [64, num_classes]
-
-        # x_up = [ConvReLU(c_segmentation[0], c_segmentation[1], kernel_size=1),
-        #         nn.Upsample(scale_factor=16.0, mode='bilinear', align_corners=False)]
-        # self.x_up = nn.Sequential(*x_up)
 
         segmentation_part1 = [ConvReLU(c_segmentation[0], c_segmentation[0], kernel_size=1),
                               nn.Upsample(scale_factor=4.0, mode='bilinear',
@@ -214,7 +200,6 @@ class MobileNetV2_CS(nn.Module):
 
         self.segm_part1 = nn.Sequential(*segmentation_part1)
 
-        # self.alpha = nn.Parameter(torch.tensor([0.7]))
         # weight initialization
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -228,23 +213,14 @@ class MobileNetV2_CS(nn.Module):
     def forward(self, x):
         x = self.features(x)
 
-        # x_aspp = self.aspp(x)
-        # x_aspp_up = F.interpolate(x_aspp, scale_factor=4.0, mode='bilinear', align_corners=True)
-        # print(x_aspp_up.shape)
         x1 = self.segm_part1(x)
 
-        # x1_aspp = torch.cat([x_aspp_up, x1], dim=1)
-
-        # x1_seg = self.conv_up_part1(x1_aspp)
         x1_seg = self.conv_up_part1(x1)
 
         x1_up = self.up_part1(x1)
-        # alpha = 0.7
-        # x = x1_seg * self.alpha.expand_as(x1_seg) + x1_up * torch.sub(1.0, self.alpha).expand_as(x1_up)
 
-        # x_up_ = self.x_up(x)
-        x = x1_seg + x1_up  # + x_up_
-
+        x = x1_seg + x1_up
+        
         x_softmax = F.softmax(x, dim=1)
         sgm = torch.argmax(x_softmax, dim=1)
         return x_softmax, sgm
@@ -302,9 +278,9 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
     args = parser.parse_args()
 
-    experiment = Experiment(project_name='OpenEDS_MODIFIED', api_key='uG1BcicYOr83KvLjFEZQMrWVg',
-                            auto_output_logging='simple',
-                            disabled=False)
+    #experiment = Experiment(project_name='OpenEDS_MODIFIED', api_key='',
+    #                        auto_output_logging='simple',
+    #                        disabled=False)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -313,7 +289,7 @@ if __name__ == '__main__':
     with open(os.path.join(args.dir, 'command.sh'), 'w') as f:
         f.write(' '.join(sys.argv))
         f.write('\n')
-        f.write(experiment.get_key())
+        #f.write(experiment.get_key())
         f.write('\n')
 
     torch.backends.cudnn.deterministic = True
@@ -364,19 +340,6 @@ if __name__ == '__main__':
                                                    num_workers=args.num_workers, pin_memory=True)
                }
 
-    experiment.log_dataset_hash(loaders)
-    # train_mean, train_std = get_mean_std(loaders['train'], device)
-    # print('Mean {}, STD {}'.format(train_mean, train_std))
-    # sys.exit(0)
-
-    # print('Train: {}. Val: {}. Test: {}'.format(len(train_set), len(val_set), len(test_set)))
-    # for dtt in ['train', 'val', 'test']:
-    #     loader = loaders[dtt]
-    #     print(dtt, len(loader))
-    #     for i, sample_batched in enumerate(tqdm(loader)):
-    #         input = sample_batched['image']
-    #
-    # sys.exit(0)
 
     model = MobileNetV2_CS()
     model.to(device)
@@ -387,8 +350,6 @@ if __name__ == '__main__':
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr_init, weight_decay=args.wd)
     torchsummary.summary(model, (1, 320, 200))
 
-
-    # sys.exit(0)
 
     def schedule(epoch):
         t = (epoch) / (args.swa_start if args.swa else args.epochs)
@@ -408,12 +369,6 @@ if __name__ == '__main__':
         else:
             factor = lr_ratio
         return args.lr_init * factor
-
-
-    def our_schedule(epoch):
-
-        factor = (epoch + 1) // 10 + 1
-        return args.lr_init / factor
 
 
     if args.swa:
@@ -450,29 +405,25 @@ if __name__ == '__main__':
         if args.swa:
             optimizer.swap_swa_sgd()
 
-    # print('Alpha value: ', model.alpha)
     """ Training """
     for epoch in range(start_epoch, args.epochs):
         time_ep = time.time()
 
-        # if args.swa:
         lr = schedule(epoch)
-        # else:
-        #     lr = our_schedule(epoch)
 
         utils.adjust_learning_rate(optimizer, lr)
         train_res = utils.train_epoch(loaders['train'], model, criterion, optimizer)
-        experiment.log_metric("learning_rate", lr)
+        #experiment.log_metric("learning_rate", lr)
 
         # Log train_res
-        with experiment.train():
-            experiment.log_metrics(train_res, step=epoch)
+        #with experiment.train():
+        #    experiment.log_metrics(train_res, step=epoch)
 
         if epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1:
             val_res = utils.eval(loaders['val'], model, criterion, viz='val_{}'.format(epoch + 1))
             # Log val_res
-            with experiment.validate():
-                experiment.log_metrics(val_res, step=epoch)
+            #with experiment.validate():
+            #    experiment.log_metrics(val_res, step=epoch)
         else:
             val_res = {'loss': None, 'accuracy': None, 'mIOU': None}
 
@@ -493,10 +444,10 @@ if __name__ == '__main__':
                     )
 
                 optimizer.swap_swa_sgd()
-                with experiment.validate():
-                    swa_res_log = {'swa_loss': swa_res['loss'], 'swa_accuracy': swa_res['accuracy'],
+                #with experiment.validate():
+                swa_res_log = {'swa_loss': swa_res['loss'], 'swa_accuracy': swa_res['accuracy'],
                                    'swa_mIOU': swa_res['mIOU']}
-                    experiment.log_metrics(swa_res_log, step=epoch)
+                #    experiment.log_metrics(swa_res_log, step=epoch)
             else:
                 swa_res = {'loss': None, 'accuracy': None, 'mIOU': None}
 
@@ -524,19 +475,6 @@ if __name__ == '__main__':
         print(table)
     """ End of Training """
 
-    # if args.epochs % args.save_freq != 0:
-    #     optimizer.swap_swa_sgd()
-    #     optimizer.bn_update(loaders['train'], model, device)
-    #
-    #     utils.save_checkpoint(
-    #         args.dir,
-    #         args.epochs,
-    #         state_dict=model.state_dict(),
-    #         optimizer=optimizer.state_dict()
-    #     )
-
     print('End of training, ', str(datetime.datetime.now()))
-    # print('Val results: ', utils.eval(loaders['val'], model, criterion), device)
-    # utils.test_writer(model, device, loaders['test'], write_folder=root_path + 'test/predicts/')
-    # print('Alpha value: ', model.alpha)
-    experiment.end()
+
+    #experiment.end()
