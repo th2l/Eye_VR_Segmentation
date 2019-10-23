@@ -1,4 +1,5 @@
 
+## Eye Semantic Segmentation with a Lightweight Model
 AR/VR Eye Semantic Segmentation with Open Eye Dataset [1] in OpenEDS Semantic Segmentation Challenge 2019.
 - mIoU: **0.9491**
 - Number of trainable parameters: **104728**
