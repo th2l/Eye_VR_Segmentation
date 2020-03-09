@@ -10,7 +10,7 @@ Paper [ICCVW 2019](https://doi.org/10.1109/ICCVW.2019.00457)
     title={Eye Semantic Segmentation with a Lightweight Model},
     author={Huynh, Van Thong and Kim, Soo-Hyung and Lee, Guee-Sang and Yang, Hyung-Jeong},
     booktitle={2019 {IEEE/CVF International Conference on Computer Vision Workshop (ICCVW)}},
-    pages={3704--3707},
+    pages={3694-3697},
     year={2019},
     organization={IEEE},
     doi={10.1109/ICCVW.2019.00457}
