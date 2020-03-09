@@ -3,7 +3,7 @@
 AR/VR Eye Semantic Segmentation with Open Eye Dataset [1] in OpenEDS Semantic Segmentation Challenge 2019.
 - Number of trainable parameters: **104728**
 
-Paper (ICCVW 2019)
+Paper [ICCVW 2019](https://doi.org/10.1109/ICCVW.2019.00457)
 
 ```
 @inproceedings{thong2019iccvw,
