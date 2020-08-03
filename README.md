@@ -24,7 +24,6 @@ V. T. Huynh, H. Yang, G. Lee and S. Kim, "Semantic Segmentation of the Eye With 
     title={Semantic Segmentation of the Eye With a Lightweight Deep Network and Shape Correction},   
     year={2020},  
     volume={8},  
-    number={},  
     pages={131967-131974},
 }
 ```
